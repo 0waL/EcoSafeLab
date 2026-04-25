@@ -2,179 +2,206 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>Waste Safety System</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EcoSafeLab - 폐액 안전 관리 시스템</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
 <style>
-#suggestions{
-    border:1px solid #ccc;
-    max-height:200px;
-    overflow-y:auto;
-    background:white;
-    position:absolute;
-    width:100%;
-    z-index:1000;
-}
-.suggestion-item{
-    padding:8px;
-    cursor:pointer;
-}
-.suggestion-item:hover{
-    background:#eee;
-}
-</style>
+  body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+  .header { background: linear-gradient(135deg, #1a3a5c, #2d6a9f); color: white; padding: 18px 32px; }
+  .header h1 { font-size: 1.5rem; margin: 0; }
+  .header small { font-size: 0.8rem; opacity: 0.8; }
 
+  /* 폐액 통 카드 */
+  .container-card { border-radius: 12px; border: 2px solid; min-height: 220px; }
+  .container-card.acid   { border-color: #dc3545; background: #fff5f5; }
+  .container-card.base   { border-color: #0d6efd; background: #f0f5ff; }
+  .container-card.organic  { border-color: #198754; background: #f0fff5; }
+  .container-card.inorganic{ border-color: #6c757d; background: #f8f9fa; }
+
+  .container-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .container-label.acid    { color: #dc3545; }
+  .container-label.base    { color: #0d6efd; }
+  .container-label.organic { color: #198754; }
+  .container-label.inorganic{ color: #6c757d; }
+
+  .chem-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: white; border-radius: 20px; padding: 3px 10px 3px 12px;
+    font-size: 0.82rem; margin: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    border: 1px solid #dee2e6;
+  }
+  .chem-pill .remove-btn { cursor: pointer; color: #aaa; font-size: 0.75rem; }
+  .chem-pill .remove-btn:hover { color: #dc3545; }
+
+  /* 자동완성 */
+  #suggestions {
+    position: absolute; width: 100%; background: white;
+    border: 1px solid #ccc; border-radius: 6px; max-height: 200px;
+    overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  }
+  .suggestion-item { padding: 8px 14px; cursor: pointer; font-size: 0.9rem; }
+  .suggestion-item:hover { background: #e9f3ff; }
+
+  /* 분석 결과 */
+  .result-card { border-radius: 10px; border-left: 5px solid; padding: 14px 18px; margin-bottom: 10px; }
+  .result-card.risk-low    { border-color: #198754; background: #f0fff5; }
+  .result-card.risk-medium { border-color: #ffc107; background: #fffdf0; }
+  .result-card.risk-high   { border-color: #fd7e14; background: #fff8f0; }
+  .result-card.risk-critical{ border-color: #dc3545; background: #fff5f5; }
+
+  .risk-badge { display: inline-block; border-radius: 12px; padding: 2px 10px; font-size: 0.75rem; font-weight: 600; }
+  .risk-badge.낮음     { background: #d1fae5; color: #065f46; }
+  .risk-badge.보통     { background: #fef9c3; color: #713f12; }
+  .risk-badge.높음     { background: #fed7aa; color: #7c2d12; }
+  .risk-badge.매우높음 { background: #fee2e2; color: #7f1d1d; }
+
+  /* 경고 모달 오버레이 */
+  #danger-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(180,0,0,0.85); z-index: 9999;
+    align-items: center; justify-content: center;
+  }
+  #danger-overlay.show { display: flex; }
+  .danger-box {
+    background: white; border-radius: 16px; padding: 32px 36px;
+    max-width: 520px; width: 90%; text-align: center; box-shadow: 0 8px 40px rgba(0,0,0,.4);
+  }
+  .danger-icon { font-size: 3.5rem; }
+  .danger-title { font-size: 1.5rem; font-weight: 700; color: #dc3545; margin: 10px 0; }
+
+  /* 관리자 패널 */
+  #adminPanel { display: none; }
+  #adminPanel.show { display: block; }
+  .alert-row { border-left: 4px solid #dc3545; padding: 10px 14px; background: #fff5f5; border-radius: 6px; margin-bottom: 8px; }
+
+  .hidden { display: none !important; }
+  .vol-info { font-size: 0.72rem; color: #888; }
+</style>
 </head>
 <body>
 
-<div class="container mt-5 position-relative">
+<!-- 헤더 -->
+<div class="header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>🧪 EcoSafeLab 폐액 안전 관리 시스템</h1>
+    <small>폐액 혼합 전 반응 위험성을 자동으로 분석합니다</small>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-sm btn-outline-light" onclick="toggleAdmin()">관리자 패널</button>
+    <button id="loginBtn" class="btn btn-sm btn-light" onclick="showLogin()">관리자 로그인</button>
+    <button id="logoutBtn" class="btn btn-sm btn-warning hidden" onclick="doLogout()">로그아웃</button>
+  </div>
+</div>
 
-<h3>폐액 입력</h3>
+<div class="container-fluid px-4 py-4">
 
-<input id="chemical" class="form-control mb-2"
-placeholder="chemical name"
-oninput="autoComplete()">
+  <!-- 관리자 로그인 -->
+  <div id="loginCard" class="card mb-3 hidden" style="max-width:320px">
+    <div class="card-body">
+      <h6 class="card-title">관리자 로그인</h6>
+      <input id="adminPass" type="password" class="form-control mb-2" placeholder="비밀번호">
+      <button class="btn btn-primary btn-sm w-100" onclick="doLogin()">로그인</button>
+    </div>
+  </div>
 
-<div id="suggestions"></div>
+  <!-- 관리자 패널 -->
+  <div id="adminPanel" class="card mb-4 border-danger">
+    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+      <strong>🚨 관리자 알림 패널</strong>
+      <button class="btn btn-sm btn-outline-light" onclick="clearAdminAlerts()">알림 초기화</button>
+    </div>
+    <div class="card-body" id="adminAlertList">
+      <span class="text-muted">알림 없음</span>
+    </div>
+  </div>
 
-<input id="volume" class="form-control mb-2" placeholder="volume">
-<input id="concentration" class="form-control mb-2" placeholder="concentration">
+  <!-- 폐액 통 4개 -->
+  <h5 class="fw-bold mb-3">폐액 통 현황</h5>
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="container-card acid card p-3">
+        <div class="container-label acid mb-2">🔴 산 (Acid)</div>
+        <div id="bin-acid" class="bin-content"></div>
+        <div class="vol-info mt-1" id="vol-acid"></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="container-card base card p-3">
+        <div class="container-label base mb-2">🔵 염기 (Base)</div>
+        <div id="bin-base" class="bin-content"></div>
+        <div class="vol-info mt-1" id="vol-base"></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="container-card organic card p-3">
+        <div class="container-label organic mb-2">🟢 유기 (Organic)</div>
+        <div id="bin-organic" class="bin-content"></div>
+        <div class="vol-info mt-1" id="vol-organic"></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="container-card inorganic card p-3">
+        <div class="container-label inorganic mb-2">⚪ 무기 (Inorganic)</div>
+        <div id="bin-inorganic" class="bin-content"></div>
+        <div class="vol-info mt-1" id="vol-inorganic"></div>
+      </div>
+    </div>
+  </div>
 
-<button class="btn btn-primary" onclick="add()">추가</button>
-<button class="btn btn-success" onclick="analyze()">분석</button>
-<button class="btn btn-danger" onclick="clearAll()">초기화</button>
+  <!-- 폐액 추가 폼 -->
+  <div class="card mb-4">
+    <div class="card-header fw-bold">폐액 추가</div>
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4 position-relative">
+          <label class="form-label">화학물질명</label>
+          <input id="chemInput" class="form-control" placeholder="예: hydrochloric acid, NaOH..." autocomplete="off" oninput="onChemInput()">
+          <div id="suggestions"></div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">부피 (mL)</label>
+          <input id="volumeInput" class="form-control" type="number" placeholder="100">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">농도 (%)</label>
+          <input id="concInput" class="form-control" type="number" placeholder="10">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">폐액 통</label>
+          <select id="containerSelect" class="form-select">
+            <option value="auto">자동 분류</option>
+            <option value="산">산 통</option>
+            <option value="염기">염기 통</option>
+            <option value="유기">유기 통</option>
+            <option value="무기">무기 통</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <button class="btn btn-primary w-100" onclick="addChemical()">추가 &amp; 분석</button>
+        </div>
+      </div>
+      <div id="classifyResult" class="mt-2 text-muted small"></div>
+    </div>
+  </div>
 
-<hr>
-
-<h5>현재 목록</h5>
-<div id="list"></div>
-
-<hr>
-
-<h5>분석 결과</h5>
-<div id="result"></div>
+  <!-- 분석 결과 -->
+  <div id="resultArea"></div>
 
 </div>
 
-<script>
+<!-- 위험 경고 오버레이 -->
+<div id="danger-overlay">
+  <div class="danger-box">
+    <div class="danger-icon">⚠️</div>
+    <div class="danger-title">위험 반응 감지!</div>
+    <div id="danger-detail" class="mb-3 text-start" style="font-size:0.9rem"></div>
+    <div class="d-flex gap-2 justify-content-center">
+      <button class="btn btn-danger" onclick="closeDangerOverlay(true)">확인 후 추가</button>
+      <button class="btn btn-secondary" onclick="closeDangerOverlay(false)">취소</button>
+    </div>
+  </div>
+</div>
 
-let chemicals=[];
-
-/* =============================
-   내부 DB 자동완성
-============================= */
-const localDB = [
-"hydrochloric acid",
-"sodium hydroxide",
-"sodium chloride",
-"sodium carbonate",
-"hydrogen sulfide",
-"hydrogen peroxide",
-"ethanol"
-];
-
-/* =============================
-   자동완성
-============================= */
-async function autoComplete(){
-
-    let q = document.getElementById("chemical").value;
-
-    let box = document.getElementById("suggestions");
-    box.innerHTML="";
-
-    if(q.length < 2) return;
-
-    // 1️⃣ 내부 DB
-    let local = localDB.filter(x=>x.includes(q.toLowerCase()));
-
-    // 2️⃣ PubChem
-    let apiList=[];
-    try{
-        let res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/${encodeURIComponent(q)}/json`);
-        let data = await res.json();
-        apiList = data.dictionary_terms?.compound || [];
-    }catch{}
-
-    let list = [...new Set([...local, ...apiList])];
-
-    list.slice(0,10).forEach(item=>{
-        let d = document.createElement("div");
-        d.className="suggestion-item";
-        d.innerText=item;
-
-        d.onclick=()=>{
-            document.getElementById("chemical").value=item;
-            box.innerHTML="";
-        };
-
-        box.appendChild(d);
-    });
-}
-
-/* =============================
-   추가
-============================= */
-function add(){
-
-    let c = document.getElementById("chemical").value;
-
-    if(!c) return;
-
-    chemicals.push(c);
-    render();
-}
-
-/* =============================
-   목록 표시
-============================= */
-function render(){
-    let html="";
-    chemicals.forEach(c=>{
-        html += c + "<br>";
-    });
-    document.getElementById("list").innerHTML=html;
-}
-
-/* =============================
-   분석
-============================= */
-async function analyze(){
-
-    let res = await fetch("http://localhost:3000/analyze",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({chemicals})
-    });
-
-    let data = await res.json();
-
-    let html="";
-
-    data.forEach(r=>{
-        html += `
-        <div class="alert alert-warning">
-        ${r.pair}<br>
-        위험도: ${r.risk}<br>
-        반응: ${r.reaction}<br>
-        위험: ${r.danger}
-        </div>`;
-    });
-
-    document.getElementById("result").innerHTML=html;
-}
-
-/* =============================
-   초기화
-============================= */
-function clearAll(){
-    chemicals=[];
-    render();
-    document.getElementById("result").innerHTML="";
-}
-
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
