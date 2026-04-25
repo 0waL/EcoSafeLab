@@ -74,6 +74,29 @@
   #adminPanel.show { display: block; }
   .alert-row { border-left: 4px solid #dc3545; padding: 10px 14px; background: #fff5f5; border-radius: 6px; margin-bottom: 8px; }
 
+  /* 열역학 그리드 */
+  .thermo-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 8px 0;
+  }
+  .thermo-item {
+    background: rgba(255,255,255,0.7); border-radius: 8px; padding: 8px 12px;
+    border: 1px solid rgba(0,0,0,.08);
+  }
+  .thermo-label { font-size: 0.7rem; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .thermo-value { font-size: 1rem; font-weight: 700; color: #1a1a1a; margin: 2px 0; }
+  .thermo-sub   { font-size: 0.72rem; color: #888; }
+
+  /* 기체 특성 카드 */
+  .gas-info-card { border: 1px solid #fca5a5; border-radius: 8px; overflow: hidden; }
+  .gas-info-title { background: #fee2e2; color: #7f1d1d; font-weight: 700; padding: 7px 12px; font-size: 0.88rem; }
+  .gas-info-body  { background: #fff5f5; padding: 10px 12px; }
+
+  .label-tag {
+    display: inline-block; background: #e5e7eb; color: #374151;
+    font-size: 0.7rem; font-weight: 600; border-radius: 4px;
+    padding: 1px 6px; margin-right: 4px; vertical-align: middle;
+  }
+
   .hidden { display: none !important; }
   .vol-info { font-size: 0.72rem; color: #888; }
 </style>
