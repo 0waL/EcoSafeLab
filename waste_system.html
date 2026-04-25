@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Waste Safety System</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+#suggestions{
+    border:1px solid #ccc;
+    max-height:200px;
+    overflow-y:auto;
+    background:white;
+    position:absolute;
+    width:100%;
+    z-index:1000;
+}
+.suggestion-item{
+    padding:8px;
+    cursor:pointer;
+}
+.suggestion-item:hover{
+    background:#eee;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container mt-5 position-relative">
+
+<h3>폐액 입력</h3>
+
+<input id="chemical" class="form-control mb-2"
+placeholder="chemical name"
+oninput="autoComplete()">
+
+<div id="suggestions"></div>
+
+<input id="volume" class="form-control mb-2" placeholder="volume">
+<input id="concentration" class="form-control mb-2" placeholder="concentration">
+
+<button class="btn btn-primary" onclick="add()">추가</button>
+<button class="btn btn-success" onclick="analyze()">분석</button>
+<button class="btn btn-danger" onclick="clearAll()">초기화</button>
+
+<hr>
+
+<h5>현재 목록</h5>
+<div id="list"></div>
+
+<hr>
+
+<h5>분석 결과</h5>
+<div id="result"></div>
+
+</div>
+
+<script>
+
+let chemicals=[];
+
+/* =============================
+   내부 DB 자동완성
+============================= */
+const localDB = [
+"hydrochloric acid",
+"sodium hydroxide",
+"sodium chloride",
+"sodium carbonate",
+"hydrogen sulfide",
+"hydrogen peroxide",
+"ethanol"
+];
+
+/* =============================
+   자동완성
+============================= */
+async function autoComplete(){
+
+    let q = document.getElementById("chemical").value;
+
+    let box = document.getElementById("suggestions");
+    box.innerHTML="";
+
+    if(q.length < 2) return;
+
+    // 1️⃣ 내부 DB
+    let local = localDB.filter(x=>x.includes(q.toLowerCase()));
+
+    // 2️⃣ PubChem
+    let apiList=[];
+    try{
+        let res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/${encodeURIComponent(q)}/json`);
+        let data = await res.json();
+        apiList = data.dictionary_terms?.compound || [];
+    }catch{}
+
+    let list = [...new Set([...local, ...apiList])];
+
+    list.slice(0,10).forEach(item=>{
+        let d = document.createElement("div");
+        d.className="suggestion-item";
+        d.innerText=item;
+
+        d.onclick=()=>{
+            document.getElementById("chemical").value=item;
+            box.innerHTML="";
+        };
+
+        box.appendChild(d);
+    });
+}
+
+/* =============================
+   추가
+============================= */
+function add(){
+
+    let c = document.getElementById("chemical").value;
+
+    if(!c) return;
+
+    chemicals.push(c);
+    render();
+}
+
+/* =============================
+   목록 표시
+============================= */
+function render(){
+    let html="";
+    chemicals.forEach(c=>{
+        html += c + "<br>";
+    });
+    document.getElementById("list").innerHTML=html;
+}
+
+/* =============================
+   분석
+============================= */
+async function analyze(){
+
+    let res = await fetch("http://localhost:3000/analyze",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({chemicals})
+    });
+
+    let data = await res.json();
+
+    let html="";
+
+    data.forEach(r=>{
+        html += `
+        <div class="alert alert-warning">
+        ${r.pair}<br>
+        위험도: ${r.risk}<br>
+        반응: ${r.reaction}<br>
+        위험: ${r.danger}
+        </div>`;
+    });
+
+    document.getElementById("result").innerHTML=html;
+}
+
+/* =============================
+   초기화
+============================= */
+function clearAll(){
+    chemicals=[];
+    render();
+    document.getElementById("result").innerHTML="";
+}
+
+</script>
+
+</body>
+</html>
