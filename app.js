@@ -66,7 +66,7 @@ const localDB = [
     "hydrochloric acid","sulfuric acid","nitric acid","acetic acid",
     "phosphoric acid","hydrofluoric acid","formic acid",
     "sodium hydroxide","potassium hydroxide","calcium hydroxide","ammonia",
-    "sodium carbonate",
+    "sodium carbonate","calcium carbonate",
     "ethanol","methanol","acetone","benzene","toluene","diethyl ether",
     "chloroform","hexane","dichloromethane",
     "sodium chloride","sodium bicarbonate","sodium hypochlorite","bleach",
