@@ -35,8 +35,10 @@ const chemDB = {
     "ca(oh)2":            { formula: "Ca(OH)2",  types: ["base","strong_base"],   mw: 74.09,  dhf: -986.1  },
     "ammonia":            { formula: "NH3",      types: ["base","weak_base","toxic"], mw: 17.03, dhf: -46.1  },
     "nh3":                { formula: "NH3",      types: ["base","weak_base","toxic"], mw: 17.03, dhf: -46.1  },
-    "sodium carbonate":   { formula: "Na2CO3",   types: ["base","carbonate","inorganic"], mw: 105.99, dhf: -1130.7 },
-    "na2co3":             { formula: "Na2CO3",   types: ["base","carbonate","inorganic"], mw: 105.99, dhf: -1130.7 },
+    "sodium carbonate":    { formula: "Na2CO3",  types: ["base","carbonate","inorganic"], mw: 105.99, dhf: -1130.7 },
+    "na2co3":              { formula: "Na2CO3",  types: ["base","carbonate","inorganic"], mw: 105.99, dhf: -1130.7 },
+    "calcium carbonate":   { formula: "CaCO3",   types: ["salt","carbonate","inorganic"], mw: 100.09, dhf: -1206.9 },
+    "caco3":               { formula: "CaCO3",   types: ["salt","carbonate","inorganic"], mw: 100.09, dhf: -1206.9 },
 
     // 유기 (Organic)
     "ethanol":       { formula: "C2H5OH",    types: ["organic","flammable"],         mw: 46.07,  dhf: -277.7 },
