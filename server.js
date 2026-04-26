@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const https = require("https");
 
 const app = express();
 app.use(cors());
@@ -75,6 +76,75 @@ const chemDB = {
 
 function lookupChem(name) {
     return chemDB[name.toLowerCase().trim()] || null;
+}
+
+/* ===================================================
+   PubChem 폴백 — 로컬 DB에 없는 물질 자동 조회
+=================================================== */
+const pubchemCache = {};
+
+function httpsGet(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, res => {
+            let raw = '';
+            res.on('data', c => raw += c);
+            res.on('end', () => {
+                try { resolve(JSON.parse(raw)); }
+                catch (e) { reject(e); }
+            });
+        }).on('error', reject);
+    });
+}
+
+function inferTypes(formula) {
+    if (formula === 'H2O')  return ['inorganic'];
+    if (formula === 'H2O2') return ['oxidizer', 'inorganic'];
+    if (/OCl/.test(formula)) return ['salt', 'oxidizer', 'inorganic', 'bleach'];
+    if (/CO3/.test(formula)) return ['carbonate', 'inorganic'];
+    // 수산화물(염기): C가 없어야 유기산의 -COOH와 구분
+    if (formula.includes('OH') && !formula.includes('C')) {
+        return /^(Na|K|Li|Rb|Cs)OH$|^(Ca|Ba|Sr)\(OH\)2$/.test(formula)
+            ? ['base', 'strong_base']
+            : ['base', 'weak_base'];
+    }
+    if (formula === 'NH3') return ['base', 'weak_base', 'toxic'];
+    if (formula.includes('NH4')) return ['salt', 'ammonium', 'inorganic'];
+    if (['HCl','HBr','HI','HClO4','HClO3'].includes(formula)) return ['acid', 'strong_acid'];
+    if (formula === 'HNO3')  return ['acid', 'strong_acid', 'oxidizer'];
+    if (formula === 'H2SO4') return ['acid', 'strong_acid', 'oxidizer'];
+    if (/MnO4/.test(formula)) return ['oxidizer', 'inorganic'];
+    // 황화물: S를 포함하지만 황산/아황산(SO) 패턴은 제외
+    if (formula.includes('S') && !/SO/.test(formula)) return ['sulfide', 'inorganic'];
+    if (/^H/.test(formula)) return ['acid', 'weak_acid'];
+    if (formula.includes('C') && formula.includes('H')) return ['organic'];
+    return ['inorganic'];
+}
+
+async function lookupChemPubChem(name) {
+    const key = name.toLowerCase().trim();
+    if (pubchemCache[key] !== undefined) return pubchemCache[key];
+    try {
+        const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(name)}/property/MolecularFormula,MolecularWeight/JSON`;
+        const data = await httpsGet(url);
+        const props = data?.PropertyTable?.Properties?.[0];
+        if (!props) { pubchemCache[key] = null; return null; }
+        const chem = {
+            formula: props.MolecularFormula,
+            mw:      parseFloat(props.MolecularWeight),
+            types:   inferTypes(props.MolecularFormula),
+            dhf:     null,
+            source:  'pubchem'
+        };
+        pubchemCache[key] = chem;
+        return chem;
+    } catch {
+        pubchemCache[key] = null;
+        return null;
+    }
+}
+
+async function lookupChemAsync(name) {
+    return lookupChem(name) || await lookupChemPubChem(name);
 }
 
 function has(chem, t) { return chem.types.includes(t); }
@@ -356,29 +426,30 @@ let adminAlerts = [];
 =================================================== */
 
 // 화학물질 분류
-app.post("/classify", (req, res) => {
-    const chem = lookupChem(req.body.name || "");
+app.post("/classify", async (req, res) => {
+    const chem = await lookupChemAsync(req.body.name || "");
     if (!chem) return res.json({ found: false });
     res.json({
         found: true,
         formula: chem.formula,
         types: chem.types,
         containerType: getContainerType(chem),
-        mw: chem.mw
+        mw: chem.mw,
+        source: chem.source || 'local'
     });
 });
 
 // 반응 분석 (새 물질 + 기존 목록)
 // newChem: { name, volume(mL), conc(%) }  또는 string(하위 호환)
 // existing: [{ name, volume, conc }]      또는 string[]
-app.post("/check-reaction", (req, res) => {
+app.post("/check-reaction", async (req, res) => {
     const { newChem, existing = [] } = req.body;
 
     const newName = typeof newChem === "string" ? newChem : newChem.name;
     const newVol  = typeof newChem === "object" ? Number(newChem.volume) : null;
     const newConc = typeof newChem === "object" ? Number(newChem.conc)   : null;
 
-    const a = lookupChem(newName);
+    const a = await lookupChemAsync(newName);
     if (!a) return res.json({ error: `알 수 없는 물질: ${newName}`, results: [], containerType: "미분류" });
 
     const results = [];
@@ -388,7 +459,7 @@ app.post("/check-reaction", (req, res) => {
         const existVol  = typeof item === "object" ? Number(item.volume) : null;
         const existConc = typeof item === "object" ? Number(item.conc)   : null;
 
-        const b = lookupChem(existName);
+        const b = await lookupChemAsync(existName);
         if (!b) continue;
 
         const rxns = analyzeReaction(a, b);

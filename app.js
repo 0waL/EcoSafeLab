@@ -118,8 +118,11 @@ async function previewClassify(name) {
         });
         const d = await res.json();
         if (d.found) {
+            const srcBadge = d.source === 'pubchem'
+                ? `<span class="badge bg-info ms-1" title="PubChem에서 자동 조회됨">PubChem</span>`
+                : '';
             el.innerHTML = `<b>${d.formula}</b> → <b>${d.containerType}</b> 폐액 통 권장
-                <span class="badge bg-secondary ms-1">${d.types.join(", ")}</span>`;
+                <span class="badge bg-secondary ms-1">${d.types.join(", ")}</span>${srcBadge}`;
             document.getElementById("containerSelect").value =
                 (document.getElementById("containerSelect").value === "auto") ? "auto" : document.getElementById("containerSelect").value;
         } else {
