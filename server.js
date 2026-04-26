@@ -34,8 +34,8 @@ const chemDB = {
     "koh":                { formula: "KOH",      types: ["base","strong_base"],   mw: 56.11,  dhf: -424.8  },
     "calcium hydroxide":  { formula: "Ca(OH)2",  types: ["base","strong_base"],   mw: 74.09,  dhf: -986.1  },
     "ca(oh)2":            { formula: "Ca(OH)2",  types: ["base","strong_base"],   mw: 74.09,  dhf: -986.1  },
-    "ammonia":            { formula: "NH3",      types: ["base","weak_base","toxic"], mw: 17.03, dhf: -46.1  },
-    "nh3":                { formula: "NH3",      types: ["base","weak_base","toxic"], mw: 17.03, dhf: -46.1  },
+    "ammonia":            { formula: "NH3",      types: ["base","weak_base","toxic","ammonia"], mw: 17.03, dhf: -46.1  },
+    "nh3":                { formula: "NH3",      types: ["base","weak_base","toxic","ammonia"], mw: 17.03, dhf: -46.1  },
     "sodium carbonate":    { formula: "Na2CO3",  types: ["base","carbonate","inorganic"], mw: 105.99, dhf: -1130.7 },
     "na2co3":              { formula: "Na2CO3",  types: ["base","carbonate","inorganic"], mw: 105.99, dhf: -1130.7 },
     "calcium carbonate":   { formula: "CaCO3",   types: ["salt","carbonate","inorganic"], mw: 100.09, dhf: -1206.9 },
@@ -62,8 +62,10 @@ const chemDB = {
     "sodium hypochlorite":  { formula: "NaOCl",  types: ["salt","oxidizer","inorganic","bleach"], mw: 74.44, dhf: -347.1 },
     "naocl":                { formula: "NaOCl",  types: ["salt","oxidizer","inorganic","bleach"], mw: 74.44, dhf: -347.1 },
     "bleach":               { formula: "NaOCl",  types: ["salt","oxidizer","inorganic","bleach"], mw: 74.44, dhf: -347.1 },
-    "hydrogen peroxide":    { formula: "H2O2",   types: ["oxidizer","inorganic"],           mw: 34.01,  dhf: -187.8  },
-    "h2o2":                 { formula: "H2O2",   types: ["oxidizer","inorganic"],           mw: 34.01,  dhf: -187.8  },
+    "water":               { formula: "H2O",    types: ["inorganic","water"],              mw: 18.02,  dhf: -285.8  },
+    "h2o":                 { formula: "H2O",    types: ["inorganic","water"],              mw: 18.02,  dhf: -285.8  },
+    "hydrogen peroxide":    { formula: "H2O2",   types: ["oxidizer","inorganic","peroxide"], mw: 34.01,  dhf: -187.8  },
+    "h2o2":                 { formula: "H2O2",   types: ["oxidizer","inorganic","peroxide"], mw: 34.01,  dhf: -187.8  },
     "hydrogen sulfide":     { formula: "H2S",    types: ["sulfide","toxic","inorganic"],    mw: 34.08,  dhf: -20.6   },
     "h2s":                  { formula: "H2S",    types: ["sulfide","toxic","inorganic"],    mw: 34.08,  dhf: -20.6   },
     "potassium permanganate":{ formula: "KMnO4", types: ["oxidizer","inorganic"],           mw: 158.03, dhf: -837.2  },
@@ -97,8 +99,8 @@ function httpsGet(url) {
 }
 
 function inferTypes(formula) {
-    if (formula === 'H2O')  return ['inorganic'];
-    if (formula === 'H2O2') return ['oxidizer', 'inorganic'];
+    if (formula === 'H2O')  return ['inorganic', 'water'];
+    if (formula === 'H2O2') return ['oxidizer', 'inorganic', 'peroxide'];
     if (/OCl/.test(formula)) return ['salt', 'oxidizer', 'inorganic', 'bleach'];
     if (/CO3/.test(formula)) return ['carbonate', 'inorganic'];
     // 수산화물(염기): C가 없어야 유기산의 -COOH와 구분
@@ -107,7 +109,7 @@ function inferTypes(formula) {
             ? ['base', 'strong_base']
             : ['base', 'weak_base'];
     }
-    if (formula === 'NH3') return ['base', 'weak_base', 'toxic'];
+    if (formula === 'NH3') return ['base', 'weak_base', 'toxic', 'ammonia'];
     if (formula.includes('NH4')) return ['salt', 'ammonium', 'inorganic'];
     if (['HCl','HBr','HI','HClO4','HClO3'].includes(formula)) return ['acid', 'strong_acid'];
     if (formula === 'HNO3')  return ['acid', 'strong_acid', 'oxidizer'];
@@ -235,16 +237,32 @@ const gasDB = {
         hazardLevel:    "산화 (연소 가속)",
         note:           "산화제로 가연성 물질의 연소를 급격히 가속.",
         action:         "화기 즉시 제거 · 가연성 물질과 격리"
+    },
+    "NH₂Cl": {
+        fullName:         "클로라민 (Chloramine, NH₂Cl)",
+        color:            "무색",
+        odor:             "강한 표백제 냄새",
+        odorThresholdPpm: 0.5,
+        densityVsAir:     1.74,
+        heavierThanAir:   true,
+        tlvTwa:           0.5,
+        tlvStel:          null,
+        dangerousPpm:     10,
+        fatalPpm:         null,
+        hazardLevel:      "독성 (호흡기·눈 손상)",
+        note:             "표백제+암모니아 혼합 시 생성. 분해 시 Cl₂·NH₃ 등 2차 독성 가스 추가 발생 가능.",
+        action:           "즉시 대피 · 신선한 공기 확보 · 눈 즉시 수세 · 119 신고"
     }
 };
 
 function getGasKey(gasStr) {
     if (!gasStr) return null;
-    if (gasStr.includes("H₂S")) return "H₂S";
-    if (gasStr.includes("CO₂")) return "CO₂";
-    if (gasStr.includes("Cl₂")) return "Cl₂";
-    if (gasStr.includes("NH₃")) return "NH₃";
-    if (gasStr.includes("O₂")) return "O₂";
+    if (gasStr.includes("H₂S"))  return "H₂S";
+    if (gasStr.includes("CO₂"))  return "CO₂";
+    if (gasStr.includes("Cl₂"))  return "Cl₂";
+    if (gasStr.includes("NH₂Cl")) return "NH₂Cl";
+    if (gasStr.includes("NH₃"))  return "NH₃";
+    if (gasStr.includes("O₂"))   return "O₂";
     return null;
 }
 
@@ -370,6 +388,65 @@ function analyzeReaction(a, b) {
             gasProduced:  "NH₃",
             risk:         "높음",
             warning:      "암모니아(NH₃) 가스 발생! 환기를 확보하세요.",
+            dangerous:    true
+        });
+    }
+
+    // 강산 + 물 → 발열 희석 (H2SO4 특히 위험)
+    if ((has(a,"strong_acid") && has(b,"water")) || (has(a,"water") && has(b,"strong_acid"))) {
+        const acid = has(a,"strong_acid") ? a : b;
+        const isH2SO4 = acid.formula === "H2SO4";
+        const dH = isH2SO4 ? -96.0 : -35.0; // kJ/mol
+        const dS = -80;
+        reactions.push({
+            reactionType: "발열 희석 반응",
+            equation:     `${acid.formula} + H₂O → [${acid.formula}(aq)] + 열`,
+            deltaH:       dH,
+            deltaS:       dS,
+            deltaG:       calcDeltaG(dH, dS),
+            heatFlow:     isH2SO4 ? "강한 발열 (비산 위험)" : "발열",
+            gasProduced:  null,
+            risk:         isH2SO4 ? "매우 높음" : "높음",
+            warning:      isH2SO4
+                ? "⚠️ 진한 황산에 물을 가하면 격렬한 비산(splashing) 위험! 반드시 물에 산을 천천히 부으세요."
+                : `진한 산(${acid.formula})과 물 혼합 시 발열. 항상 산을 물에 부으세요.`,
+            dangerous:    isH2SO4
+        });
+    }
+
+    // 표백제(NaOCl) + 암모니아 → 클로라민(NH₂Cl) 독성 가스
+    if ((has(a,"bleach") && has(b,"ammonia")) || (has(a,"ammonia") && has(b,"bleach"))) {
+        const dH = -50.0; // kJ/mol
+        const dS = 90;
+        reactions.push({
+            reactionType: "독성 가스 발생",
+            equation:     "NaOCl + NH₃ → NaCl + NH₂Cl↑",
+            deltaH:       dH,
+            deltaS:       dS,
+            deltaG:       calcDeltaG(dH, dS),
+            heatFlow:     "발열",
+            gasProduced:  "NH₂Cl",
+            risk:         "매우 높음",
+            warning:      "⚠️ 독성 클로라민(NH₂Cl) 가스 발생! 표백제와 암모니아 절대 혼합 금지!",
+            dangerous:    true
+        });
+    }
+
+    // 과산화수소 + 강산화제(KMnO4 등) → 급격한 O₂ 발생·화재
+    if ((has(a,"peroxide") && has(b,"oxidizer") && !has(b,"peroxide")) ||
+        (has(b,"peroxide") && has(a,"oxidizer") && !has(a,"peroxide"))) {
+        const dH = -196.0; // kJ/mol (H2O2 + 2KMnO4 기준)
+        const dS = 150;
+        reactions.push({
+            reactionType: "폭발적 산화 분해",
+            equation:     "H₂O₂ + 산화제 → 급격한 O₂ 발생 + 열",
+            deltaH:       dH,
+            deltaS:       dS,
+            deltaG:       calcDeltaG(dH, dS),
+            heatFlow:     "강한 발열",
+            gasProduced:  "O₂",
+            risk:         "매우 높음",
+            warning:      "⚠️ 과산화수소와 강산화제 혼합 시 급격한 O₂ 발생·화재 위험! 절대 혼합하지 마세요!",
             dangerous:    true
         });
     }
