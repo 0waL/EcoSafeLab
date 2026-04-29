@@ -63,15 +63,32 @@ function escHtml(s) {
    PubChem 자동완성
 =================================================== */
 const localDB = [
+    // 산
     "hydrochloric acid","sulfuric acid","nitric acid","acetic acid",
     "phosphoric acid","hydrofluoric acid","formic acid",
+    "hydrobromic acid","perchloric acid","oxalic acid","boric acid",
+    // 염기
     "sodium hydroxide","potassium hydroxide","calcium hydroxide","ammonia",
-    "water","sodium carbonate","calcium carbonate",
+    "lithium hydroxide","barium hydroxide",
+    "water","sodium carbonate","calcium carbonate","potassium carbonate",
+    // 유기
     "ethanol","methanol","acetone","benzene","toluene","diethyl ether",
     "chloroform","hexane","dichloromethane",
+    "ethyl acetate","isopropanol","n-butanol","tetrahydrofuran",
+    "dimethyl sulfoxide","dimethylformamide","acetonitrile",
+    "cyclohexane","carbon tetrachloride","xylene","1,4-dioxane",
+    "carbon disulfide","pyridine",
+    // 무기
     "sodium chloride","sodium bicarbonate","sodium hypochlorite","bleach",
     "hydrogen peroxide","hydrogen sulfide","potassium permanganate",
-    "ammonium chloride","copper sulfate"
+    "ammonium chloride","copper sulfate",
+    "sodium sulfate","magnesium sulfate","calcium chloride","potassium chloride",
+    "potassium iodide","sodium bromide","silver nitrate",
+    "potassium nitrate","sodium nitrate","ammonium nitrate",
+    "sodium sulfide","potassium dichromate","iron(iii) chloride","iron(ii) sulfate",
+    "iron(ii) chloride","zinc chloride","aluminum chloride","barium chloride",
+    "copper(ii) chloride","manganese dioxide","sodium thiosulfate",
+    "ammonium sulfate","lead(ii) nitrate","potassium sulfate"
 ];
 
 let autocompleteTimeout = null;
@@ -450,6 +467,14 @@ document.addEventListener("click", e => {
     if (!e.target.closest("#chemInput") && !e.target.closest("#suggestions")) {
         document.getElementById("suggestions").innerHTML = "";
     }
+});
+
+document.getElementById("volumeInput").addEventListener("input", function () {
+    if (this.value < 0) this.value = 0;
+});
+document.getElementById("concInput").addEventListener("input", function () {
+    if (this.value < 0) this.value = 0;
+    if (this.value > 100) this.value = 100;
 });
 
 renderAllBins();
