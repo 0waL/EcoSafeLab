@@ -469,4 +469,12 @@ document.addEventListener("click", e => {
     }
 });
 
+document.getElementById("volumeInput").addEventListener("input", function () {
+    if (this.value < 0) this.value = 0;
+});
+document.getElementById("concInput").addEventListener("input", function () {
+    if (this.value < 0) this.value = 0;
+    if (this.value > 100) this.value = 100;
+});
+
 renderAllBins();
